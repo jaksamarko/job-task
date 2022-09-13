@@ -127,11 +127,13 @@ export class AppGateway
     //Job done
     if (nearestSheepIndex == -1) return { event: 'update', data };
 
+    const wolf = data.wolf;
+
     //Move wolf towards the closest sheep
     this.moveToward(
-      data.wolf,
-      data.wolf.speed,
-      this.directionTo(data.wolf, data.sheeps[nearestSheepIndex]),
+      wolf,
+      wolf.speed,
+      this.directionTo(wolf, data.sheeps[nearestSheepIndex]),
       data.screen,
     );
 
@@ -141,10 +143,10 @@ export class AppGateway
       //Check if sheep is too close to the wolf
       if (
         this.distance(data.wolf, sheeps[ind]) <=
-        data.wolf.size + AppGateway.SHEEP_SIZE
+        wolf.size + AppGateway.SHEEP_SIZE
       ) {
-        data.wolf.size += 0.25;
-        data.wolf.speed -= 0.015;
+        wolf.size += 0.25;
+        wolf.speed -= 0.025;
         sheeps.splice(ind, 1);
         ind--;
         continue;
@@ -154,7 +156,7 @@ export class AppGateway
       this.moveToward(
         sheeps[ind],
         AppGateway.SHEEP_SPEED,
-        this.directionTo(data.wolf, sheeps[ind]),
+        this.directionTo(wolf, sheeps[ind]),
         data.screen,
       );
     }
