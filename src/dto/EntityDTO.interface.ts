@@ -1,8 +1,7 @@
 import Coord from './Coord.interface';
 
 interface EntityDTO extends Coord {
-  dir: number;
-  dead: boolean;
+  dead?: boolean;
 }
 
 export default EntityDTO;

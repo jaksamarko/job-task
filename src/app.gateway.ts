@@ -20,7 +20,11 @@ export class AppGateway
 
   private static SHEEP_SIZE: number = 2;
   private static SHEEP_SPEED: number = 0.25;
-  private static WOLF_SIZE: number = 2 * AppGateway.SHEEP_SIZE;
+  private static SHEEP_COUNT: number = 100;
+  private static WOLF_SIZE: number = 1.25 * AppGateway.SHEEP_SIZE;
+  private static WOLF_SPEED: number = 3;
+
+  private game: GameDTO;
 
   private distance(entityA: EntityDTO, entityB: EntityDTO) {
     return Math.sqrt(
@@ -69,9 +73,37 @@ export class AppGateway
   handleConnection(client: Socket, ...args: any[]) {
     this.logger.log(`Client ${client.id} connected!`);
 
+    const query = client.handshake.query;
+    const screen: Coord = {
+      x: parseInt(query.width as string),
+      y: parseInt(query.height as string),
+    };
+    this.game = {
+      screen,
+      wolf: {
+        x: screen.x / 2,
+        y: screen.y / 2,
+        speed: AppGateway.WOLF_SPEED,
+        size: AppGateway.WOLF_SIZE,
+      },
+      sheeps: [],
+    };
+
+    for (let i = 0; i < AppGateway.SHEEP_COUNT; i++) {
+      this.game.sheeps.push({
+        x: Math.random() * screen.x,
+        y: Math.random() * screen.y,
+        dead: false,
+      });
+    }
+
+    this.logger.log(this.game.sheeps.length);
+
     client.emit('initial', {
       sheepSize: AppGateway.SHEEP_SIZE,
       wolfSize: AppGateway.WOLF_SIZE,
+      sheepCount: AppGateway.SHEEP_COUNT,
+      game: this.game,
     });
   }
 
@@ -80,7 +112,8 @@ export class AppGateway
   }
 
   @SubscribeMessage('requestUpdate')
-  handleUpdate(client: Socket, data: GameDTO): WsResponse<GameDTO> {
+  handleUpdate(client: Socket): WsResponse<GameDTO> {
+    const data = this.game;
     const nearestSheepIndex = this.nearestSheep(data);
 
     //Job done
@@ -94,23 +127,24 @@ export class AppGateway
       data.screen,
     );
 
-    for (const sheep of data.sheeps) {
-      if (sheep.dead) continue;
+    const sheeps = data.sheeps;
 
+    for (let ind = 0; ind < sheeps.length; ind++) {
       if (
-        this.distance(data.wolf, sheep) <=
+        this.distance(data.wolf, sheeps[ind]) <=
         data.wolf.size + AppGateway.SHEEP_SIZE
       ) {
-        sheep.dead = true;
-        data.wolf.size += 0.025;
+        data.wolf.size += 0.25;
         data.wolf.speed -= 0.015;
+        sheeps.splice(ind, 1);
+        ind--;
         continue;
       }
 
       this.moveToward(
-        sheep,
+        sheeps[ind],
         AppGateway.SHEEP_SPEED,
-        this.directionTo(data.wolf, sheep),
+        this.directionTo(data.wolf, sheeps[ind]),
         data.screen,
       );
     }

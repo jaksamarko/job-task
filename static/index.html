@@ -25,17 +25,10 @@
   <body>
     <canvas id="canv"></canvas>
     <script>
-      class Coord {
+      class Entity {
         constructor(x, y) {
           this.x = x;
           this.y = y;
-        }
-      }
-
-      class Entity extends Coord {
-        constructor(x, y) {
-          super(x, y);
-          this.dead = false;
         }
       }
 
@@ -57,58 +50,57 @@
       }
 
       class Wolf extends Entity {
-        constructor(x, y, speed) {
+        constructor(x, y, size) {
           super(x, y);
-          this.size = 1;
-          this.speed = speed;
+          this.size = size;
         }
         draw() {
           ctx.beginPath();
-          ctx.arc(this.x, this.y, wolfSize * this.size, 0, Math.PI * 2);
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
           ctx.fillStyle = '#FF0000';
           ctx.fill();
           ctx.closePath();
         }
       }
 
-      const socket = io('http://localhost:3000');
+      function parseSocketData(data) {
+        for (const sheepInd in data.sheeps) {
+          Object.assign(sheeps[sheepInd], data.sheeps[sheepInd]);
+        }
+        sheeps.length = data.sheeps.length;
+        Object.assign(wolf, data.wolf);
+      }
 
       const canvas = document.getElementById('canv');
       canvas.width = 512;
       canvas.height = 480;
       const ctx = canvas.getContext('2d');
       let sheepSize = 0;
-      let wolfSize = 0;
-      const screen = new Coord(canvas.width, canvas.height);
-
+      const socket = io('http://localhost:3000', {
+        query: { width: canvas.width, height: canvas.height },
+      });
       const sheeps = [];
 
-      for (let i = 0; i < 100; i++)
-        sheeps.push(
-          new Sheep(
-            Math.random() * canvas.width,
-            Math.random() * canvas.height,
-          ),
-        );
-
-      const wolf = new Wolf(canvas.width * 0.5, canvas.height * 0.5, 3);
+      let wolf;
 
       socket.on('update', (ret) => {
-        for (const sheepInd in sheeps) {
-          Object.assign(sheeps[sheepInd], ret.sheeps[sheepInd]);
-        }
-        Object.assign(wolf, ret.wolf);
+        parseSocketData(ret);
         draw();
         setTimeout(requestUpdate, 30);
       });
 
       socket.on('initial', (data) => {
         sheepSize = data.sheepSize;
-        wolfSize = data.wolfSize;
+        wolf = new Wolf(0, 0, data.wolfSize);
+
+        for (let i = 0; i < data.sheepCount; i++) sheeps.push(new Sheep(0, 0));
+        parseSocketData(data.game);
+        draw();
+        requestUpdate();
       });
 
       function requestUpdate() {
-        socket.emit('requestUpdate', { sheeps, wolf, screen });
+        socket.emit('requestUpdate');
       }
 
       function draw() {
@@ -118,9 +110,6 @@
         }
         wolf.draw();
       }
-
-      draw();
-      requestUpdate();
     </script>
   </body>
 </html>
