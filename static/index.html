@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Job task</title>
+    <style>
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+      canvas {
+        padding: 0;
+        margin: auto;
+        display: block;
+        width: 50%;
+        height: 50%;
+        border-style: solid;
+      }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+  </head>
+  <body>
+    <canvas id="canv"></canvas>
+    <script>
+      class Coord {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+        }
+      }
+
+      class Entity extends Coord {
+        constructor(x, y) {
+          super(x, y);
+          this.dead = false;
+        }
+      }
+
+      class Sheep extends Entity {
+        constructor(x, y) {
+          super(x, y);
+        }
+        draw() {
+          if (!this.dead) {
+            ctx.fillStyle = '#0000FF';
+            ctx.fillRect(
+              this.x - sheepSize,
+              this.y - sheepSize,
+              2 * sheepSize,
+              2 * sheepSize,
+            );
+          }
+        }
+      }
+
+      class Wolf extends Entity {
+        constructor(x, y, speed) {
+          super(x, y);
+          this.size = 1;
+          this.speed = speed;
+        }
+        draw() {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, wolfSize * this.size, 0, Math.PI * 2);
+          ctx.fillStyle = '#FF0000';
+          ctx.fill();
+          ctx.closePath();
+        }
+      }
+
+      const socket = io('http://localhost:3000');
+
+      const canvas = document.getElementById('canv');
+      canvas.width = 512;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+      const sheepSize = 2;
+      const wolfSize = sheepSize * 4;
+      const screen = new Coord(canvas.width, canvas.height);
+
+      const sheeps = [];
+
+      for (let i = 0; i < 100; i++)
+        sheeps.push(
+          new Sheep(
+            Math.random() * canvas.width,
+            Math.random() * canvas.height,
+          ),
+        );
+
+      const wolf = new Wolf(canvas.width * 0.5, canvas.height * 0.5, 3);
+
+      socket.on('update', (ret) => {
+        for (const sheepInd in sheeps) {
+          Object.assign(sheeps[sheepInd], ret.sheeps[sheepInd]);
+        }
+        Object.assign(wolf, ret.wolf);
+        draw();
+        console.log(ret);
+        setTimeout(requestUpdate, 30);
+      });
+
+      function requestUpdate() {
+        socket.emit('requestUpdate', { sheeps, wolf, screen });
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (const sheep of sheeps) {
+          sheep.draw();
+        }
+        wolf.draw();
+      }
+
+      draw();
+      requestUpdate();
+    </script>
+  </body>
+</html>
