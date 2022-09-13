@@ -9,7 +9,6 @@ import {
 } from '@nestjs/websockets';
 import { Socket, Server } from 'socket.io';
 import Coord from './dto/Coord.interface';
-import EntityDTO from './dto/EntityDTO.interface';
 import GameDTO from './dto/GameDTO.interface';
 
 @WebSocketGateway()
@@ -26,7 +25,7 @@ export class AppGateway
 
   private game: GameDTO;
 
-  private distance(entityA: EntityDTO, entityB: EntityDTO) {
+  private distance(entityA: Coord, entityB: Coord) {
     return Math.sqrt(
       (entityA.x - entityB.x) ** 2 + (entityA.y - entityB.y) ** 2,
     );
@@ -41,25 +40,23 @@ export class AppGateway
     let index = -1,
       dist = Infinity;
     data.sheeps.forEach((sheep, sheepInd) => {
-      if (!sheep.dead) {
-        const distBetween = this.distance(data.wolf, sheep);
-        if (distBetween < dist) {
-          index = sheepInd;
-          dist = distBetween;
-        }
+      const distBetween = this.distance(data.wolf, sheep);
+      if (distBetween < dist) {
+        index = sheepInd;
+        dist = distBetween;
       }
     });
     return index;
   }
 
-  private directionTo(from: EntityDTO, to: EntityDTO): Coord {
+  private directionTo(from: Coord, to: Coord): Coord {
     const length = this.distance(from, to);
     return { x: (to.x - from.x) / length, y: (to.y - from.y) / length };
   }
 
   //Moving entities while respecting screen borders
   private moveToward(
-    entity: EntityDTO,
+    entity: Coord,
     speed: number,
     direction: Coord,
     screen: Coord,
@@ -99,7 +96,6 @@ export class AppGateway
       this.game.sheeps.push({
         x: Math.random() * screen.x,
         y: Math.random() * screen.y,
-        dead: false,
       });
     }
 

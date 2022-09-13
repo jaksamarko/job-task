@@ -1,6 +1,6 @@
-import EntityDTO from './EntityDTO.interface';
+import Coord from './Coord.interface';
 
-interface WolfDTO extends EntityDTO {
+interface WolfDTO extends Coord {
   speed: number;
   size: number;
 }

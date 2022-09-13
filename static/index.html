@@ -64,6 +64,7 @@
       }
 
       function parseSocketData(data) {
+        console.log(data);
         for (const sheepInd in data.sheeps) {
           Object.assign(sheeps[sheepInd], data.sheeps[sheepInd]);
         }
