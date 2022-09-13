@@ -36,6 +36,7 @@ export class AppGateway
     return Math.max(min, Math.min(max, val));
   }
 
+  //Returns the index of the nearest sheep from the wolf
   private nearestSheep(data: GameDTO): number {
     let index = -1,
       dist = Infinity;
@@ -56,6 +57,7 @@ export class AppGateway
     return { x: (to.x - from.x) / length, y: (to.y - from.y) / length };
   }
 
+  //Moving entities while respecting screen borders
   private moveToward(
     entity: EntityDTO,
     speed: number,
@@ -73,11 +75,15 @@ export class AppGateway
   handleConnection(client: Socket, ...args: any[]) {
     this.logger.log(`Client ${client.id} connected!`);
 
+    //Receiving information from client like canvas size
     const query = client.handshake.query;
     const screen: Coord = {
       x: parseInt(query.width as string),
       y: parseInt(query.height as string),
     };
+
+    //Create the simulation, spawn wolf and sheeps
+
     this.game = {
       screen,
       wolf: {
@@ -97,7 +103,7 @@ export class AppGateway
       });
     }
 
-    this.logger.log(this.game.sheeps.length);
+    //Sending initial information to the client
 
     client.emit('initial', {
       sheepSize: AppGateway.SHEEP_SIZE,
@@ -109,6 +115,8 @@ export class AppGateway
 
   handleDisconnect(client: any) {
     this.logger.log(`Client ${client.id} disconnected!`);
+
+    this.game.sheeps = [];
   }
 
   @SubscribeMessage('requestUpdate')
@@ -130,6 +138,7 @@ export class AppGateway
     const sheeps = data.sheeps;
 
     for (let ind = 0; ind < sheeps.length; ind++) {
+      //Check if sheep is too close to the wolf
       if (
         this.distance(data.wolf, sheeps[ind]) <=
         data.wolf.size + AppGateway.SHEEP_SIZE
@@ -141,6 +150,7 @@ export class AppGateway
         continue;
       }
 
+      //Move the sheep
       this.moveToward(
         sheeps[ind],
         AppGateway.SHEEP_SPEED,
