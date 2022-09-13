@@ -18,9 +18,9 @@ export class AppGateway
 {
   private logger: Logger = new Logger('Gateway');
 
-  static SHEEP_SIZE: number = 2;
-  static WOLF_SIZE: number = 2 * AppGateway.SHEEP_SIZE;
-  static SHEEP_SPEED: number = 0.25;
+  private static SHEEP_SIZE: number = 2;
+  private static SHEEP_SPEED: number = 0.25;
+  private static WOLF_SIZE: number = 2 * AppGateway.SHEEP_SIZE;
 
   private distance(entityA: EntityDTO, entityB: EntityDTO) {
     return Math.sqrt(
