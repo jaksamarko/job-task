@@ -18,11 +18,14 @@ export class AppGateway
 {
   private logger: Logger = new Logger('Gateway');
 
-  static sheepSize: number = 2;
-  static sheepSpeed: number = 0.25;
+  static SHEEP_SIZE: number = 2;
+  static WOLF_SIZE: number = 2 * AppGateway.SHEEP_SIZE;
+  static SHEEP_SPEED: number = 0.25;
 
-  private distance(a: EntityDTO, b: EntityDTO) {
-    return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+  private distance(entityA: EntityDTO, entityB: EntityDTO) {
+    return Math.sqrt(
+      (entityA.x - entityB.x) ** 2 + (entityA.y - entityB.y) ** 2,
+    );
   }
 
   private median(min: number, max: number, val: number) {
@@ -63,8 +66,13 @@ export class AppGateway
     this.logger.log('Initalized!');
   }
 
-  handleConnection(client: any, ...args: any[]) {
+  handleConnection(client: Socket, ...args: any[]) {
     this.logger.log(`Client ${client.id} connected!`);
+
+    client.emit('initial', {
+      sheepSize: AppGateway.SHEEP_SIZE,
+      wolfSize: AppGateway.WOLF_SIZE,
+    });
   }
 
   handleDisconnect(client: any) {
@@ -74,6 +82,10 @@ export class AppGateway
   @SubscribeMessage('requestUpdate')
   handleUpdate(client: Socket, data: GameDTO): WsResponse<GameDTO> {
     const nearestSheepIndex = this.nearestSheep(data);
+
+    //Job done
+    if (nearestSheepIndex == -1) return { event: 'update', data };
+
     //Move wolf towards the closest sheep
     this.moveToward(
       data.wolf,
@@ -87,7 +99,7 @@ export class AppGateway
 
       if (
         this.distance(data.wolf, sheep) <=
-        data.wolf.size + AppGateway.sheepSize
+        data.wolf.size + AppGateway.SHEEP_SIZE
       ) {
         sheep.dead = true;
         data.wolf.size += 0.025;
@@ -97,7 +109,7 @@ export class AppGateway
 
       this.moveToward(
         sheep,
-        AppGateway.sheepSpeed,
+        AppGateway.SHEEP_SPEED,
         this.directionTo(data.wolf, sheep),
         data.screen,
       );

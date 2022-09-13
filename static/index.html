@@ -77,8 +77,8 @@
       canvas.width = 512;
       canvas.height = 480;
       const ctx = canvas.getContext('2d');
-      const sheepSize = 2;
-      const wolfSize = sheepSize * 4;
+      let sheepSize = 0;
+      let wolfSize = 0;
       const screen = new Coord(canvas.width, canvas.height);
 
       const sheeps = [];
@@ -99,8 +99,12 @@
         }
         Object.assign(wolf, ret.wolf);
         draw();
-        console.log(ret);
         setTimeout(requestUpdate, 30);
+      });
+
+      socket.on('initial', (data) => {
+        sheepSize = data.sheepSize;
+        wolfSize = data.wolfSize;
       });
 
       function requestUpdate() {
